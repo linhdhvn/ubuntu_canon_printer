@@ -57,6 +57,9 @@ declare -A ASDT_SUPPORTED_MODELS=([LBP6020]='MTNA002001 MTNA999999' \
 #OS architecture
 if [ "$(uname -m)" == 'x86_64' ]; then
 	ARCH='amd64'
+
+	# Add i386 architecture for 64-bit systems
+	dpkg --add-architecture i386
 else
 	ARCH='i386'
 fi
@@ -267,7 +270,7 @@ exit 0' > /etc/init.d/ccpd
 	service cups restart
 	if [ $ARCH == 'amd64' ]; then
 		echo 'Installing 32-bit libraries required to run 64-bit printer driver'
-		apt-get -y install libatk1.0-0:i386 libcairo2:i386 libgtk2.0-0:i386 libpango1.0-0:i386 libstdc++6:i386 libpopt0:i386 libxml2:i386 libc6:i386
+		apt-get -y install libatk1.0-0t64:i386 libcairo2:i386 libgtk2.0-0t64:i386 libpango-1.0-0:i386 libstdc++6:i386 libpopt0:i386 libxml2:i386 libc6:i386
 		check_error PACKAGE $?
 	fi
 	echo 'Installing the printer in CUPS'
