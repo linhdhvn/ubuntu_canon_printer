@@ -5,6 +5,7 @@
 #http://help.ubuntu.ru/wiki/canon_capt
 #http://forum.ubuntu.ru/index.php?topic=189049.0
 #Translated into English and modified by @hieplpvip
+#Việt hóa và chỉnh sửa bởi @linhdhvn
 ##################################################
 
 #Check if we are running as root
@@ -26,14 +27,14 @@ DRIVER_VERSION='2.71-1'
 DRIVER_VERSION_COMMON='3.21-1'
 
 #Links to driver packages
-declare -A URL_DRIVER=([amd64_common]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/cndrvcups-common_3.21-1_amd64.deb' \
-[amd64_capt]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/cndrvcups-capt_2.71-1_amd64.deb' \
-[i386_common]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/cndrvcups-common_3.21-1_i386.deb' \
-[i386_capt]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/cndrvcups-capt_2.71-1_i386.deb')
+declare -A URL_DRIVER=([amd64_common]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/cndrvcups-common_3.21-1_amd64.deb' \
+[amd64_capt]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/cndrvcups-capt_2.71-1_amd64.deb' \
+[i386_common]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/cndrvcups-common_3.21-1_i386.deb' \
+[i386_capt]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/cndrvcups-capt_2.71-1_i386.deb')
 
 #Links to autoshutdowntool
-declare -A URL_ASDT=([amd64]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/autoshutdowntool_1.00-1_amd64_deb.tar.gz' \
-[i386]='https://github.com/hieplpvip/canon_printer/raw/master/Packages/autoshutdowntool_1.00-1_i386_deb.tar.gz')
+declare -A URL_ASDT=([amd64]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/autoshutdowntool_1.00-1_amd64_deb.tar.gz' \
+[i386]='https://github.com/linhdhvn/canon_printer/raw/master/Packages/autoshutdowntool_1.00-1_i386_deb.tar.gz')
 
 #ppd files and printer models mapping
 declare -A LASERSHOT=([LBP-810]=1120 [LBP1120]=1120 [LBP1210]=1210 \
@@ -58,8 +59,12 @@ declare -A ASDT_SUPPORTED_MODELS=([LBP6020]='MTNA002001 MTNA999999' \
 if [ "$(uname -m)" == 'x86_64' ]; then
 	ARCH='amd64'
 
-	# Add i386 architecture for 64-bit systems
-	dpkg --add-architecture i386
+	# Check and add i386 architecture for 64-bit systems
+    if [ "$(dpkg --print-foreign-architectures)" == 'i386' ]; then
+	    echo "Kiến trúc i386 đã được thêm vào hệ thống"
+    else
+        dpkg --add-architecture i386
+    fi
 else
 	ARCH='i386'
 fi
@@ -89,12 +94,12 @@ function valid_ip() {
 function check_error() {
 	if [ $2 -ne 0 ]; then
 		case $1 in
-			'WGET') echo "Error while downloading file $3"
+			'WGET') echo "Lỗi khi tải file $3"
 				[ -n "$3" ] && [ -f "$3" ] && rm "$3";;
-			'PACKAGE') echo "Error installing package $3";;
-			*) echo 'Error';;
+			'PACKAGE') echo "Lỗi khi cài đặt gói $3";;
+			*) echo 'Đã xảy ra lỗi';;
 		esac
-		echo 'Press any key to exit'
+		echo 'Nhấn phím bất kỳ để thoát'
 		read -s -n1
 		exit 1
 	fi
@@ -104,45 +109,45 @@ function canon_uninstall() {
 	if [ -f /usr/sbin/ccpdadmin ]; then
 		installed_model=$(ccpdadmin | grep LBP | awk '{print $3}')
 		if [ -n "$installed_model" ]; then
-			echo "Found printer $installed_model"
-			echo "Closing captstatusui"
+			echo "Đã tìm thấy máy in $installed_model"
+			echo "Đang đóng trình theo dõi trạng thái máy in"
 			killall captstatusui 2> /dev/null
-			echo 'Stopping ccpd'
+			echo 'Đang dừng dịch vụ ccpd'
 			service ccpd stop
-			echo 'Removing the printer from the ccpd daemon configuration file'
+			echo 'Đang xóa máy in khỏi cấu hình dịch vụ ccpd'
 			ccpdadmin -x $installed_model
-			echo 'Removing the printer from CUPS'
+			echo 'Đang xóa máy in khỏi CUPS'
 			lpadmin -x $installed_model
 		fi
 	fi
-	echo 'Removing driver packages'
+	echo 'Đang xóa các gói driver'
 	dpkg --purge cndrvcups-capt
 	dpkg --purge cndrvcups-common
-	echo 'Removing unused libraries and packages'
+	echo 'Đang xóa các thư viện và gói không còn sử dụng'
 	apt-get -y autoremove
-	echo 'Deleting settings'
+	echo 'Đang xóa các thiết lập'
 	[ -f /etc/init/ccpd-start.conf ] && rm /etc/init/ccpd-start.conf
 	[ -f /etc/udev/rules.d/85-canon-capt.rules ] && rm /etc/udev/rules.d/85-canon-capt.rules
 	[ -f "${XDG_DESKTOP_DIR}/captstatusui.desktop" ] && rm "${XDG_DESKTOP_DIR}/captstatusui.desktop"
 	[ -f /usr/bin/autoshutdowntool ] && rm /usr/bin/autoshutdowntool
 	[ $INIT_SYSTEM == 'systemd' ] && update-rc.d -f ccpd remove
-	echo 'Uninstall completed'
-	echo 'Press any key to exit'
+	echo 'Đã gỡ cài đặt xong'
+	echo 'Nhấn phím bất kỳ để thoát'
 	read -s -n1
 	return 0
 }
 
 function canon_install() {
 	echo
-	PS3='Please choose your printer: '
+	PS3='Hãy chọn máy in: '
 	select NAMEPRINTER in $NAMESPRINTERS
 	do
 		[ -n "$NAMEPRINTER" ] && break
 	done
-	echo "Selected printer: $NAMEPRINTER"
+	echo "Máy in đã chọn: $NAMEPRINTER"
 	echo
-	PS3='How is the printer connected to the computer: '
-	select CONECTION in 'Via USB' 'Through network (LAN, NET)'
+	PS3='Máy in được kết nối với máy tính bằng cách nào? '
+	select CONECTION in 'Qua USB' 'Qua mạng (LAN, NET)'
 	do
 		if [ "$REPLY" == "1" ]; then
 			CONECTION="usb"
@@ -156,28 +161,28 @@ function canon_install() {
 					#If the serial number is found, that device is a Canon printer
 					[ -n "$PRINTER_SERIAL" ] && break
 				fi
-				echo -ne "Turn on the printer and plug in USB cable\r"
+				echo -ne "Hãy bật máy in và cắm cáp USB\r"
 				sleep 2
 			done
 			PATH_DEVICE="/dev/canon$NAMEPRINTER"
 			break
 		elif [ "$REPLY" == "2" ]; then
 			CONECTION="lan"
-			read -p 'Enter the IP address of the printer: ' IP_ADDRES
+			read -p 'Nhập địa chỉ IP của máy in: ' IP_ADDRES
 			until valid_ip "$IP_ADDRES"
 			do
-				echo 'Invalid IP address format, enter four decimal numbers'
-				echo -n 'from 0 to 255, separated by dots: '
+				echo 'Địa chỉ IP không đúng định dạng. Hãy nhập lại'
+				echo -n 'từ 0 đến 255, ngăn cách bằng dấu chấm: '
 				read IP_ADDRES
 			done
 			PATH_DEVICE="net:$IP_ADDRES"
-			echo 'Turn on the printer and press any key'
+			echo 'Hãy bật máy in rồi nhấn phím bất kỳ'
 			read -s -n1
 			sleep 5
 			break
 		fi
 	done
-	echo '************Driver Installation************'
+	echo '************CÀI ĐẶT DRIVER************'
 	COMMON_FILE=cndrvcups-common_${DRIVER_VERSION_COMMON}_${ARCH}.deb
 	CAPT_FILE=cndrvcups-capt_${DRIVER_VERSION}_${ARCH}.deb
 	if [ ! -f $COMMON_FILE ]; then
@@ -191,10 +196,10 @@ function canon_install() {
 	apt-get -y update
 	apt-get -y install libglade2-0 libcanberra-gtk-module
 	check_error PACKAGE $?
-	echo 'Installing common module for CUPS driver'
+	echo 'Đang cài đặt thành phần dùng chung cho driver CUPS'
 	dpkg -i $COMMON_FILE
 	check_error PACKAGE $? $COMMON_FILE
-	echo 'Installing CAPT Printer Driver Module'
+	echo 'Đang cài đặt thành phần driver máy in CAPT'
 	dpkg -i $CAPT_FILE
 	check_error PACKAGE $? $CAPT_FILE
 	#Replace /etc/init.d/ccpd
@@ -221,13 +226,13 @@ fi
 
 ccpd_start ()
 {
-	echo -n "Starting ${DAEMON}: "
+	echo -n "Đang khởi động ${DAEMON}: "
 	start-stop-daemon --start --quiet --oknodo --exec ${DAEMON}
 }
 
 ccpd_stop ()
 {
-	echo -n "Shutting down ${DAEMON}: "
+	echo -n "Đang dừng ${DAEMON}: "
 	start-stop-daemon --stop --quiet --oknodo --retry TERM/30/KILL/5 --exec ${DAEMON}
 }
 
@@ -257,7 +262,7 @@ case $1 in
 		done
 		;;
 	*)
-		echo "Usage: ccpd {start|stop|status|restart}"
+		echo "Cách dùng: ccpd {start|stop|status|restart}"
 		exit 1
 		;;
 esac
@@ -266,24 +271,24 @@ exit 0' > /etc/init.d/ccpd
 	apt-get -y install apparmor-utils
 	#Set AppArmor security profile for cupsd to complain mode
 	aa-complain /usr/sbin/cupsd
-	echo 'Restarting CUPS'
+	echo 'Đang khởi động lại CUPS'
 	service cups restart
 	if [ $ARCH == 'amd64' ]; then
-		echo 'Installing 32-bit libraries required to run 64-bit printer driver'
+		echo 'Đang cài thư viện 32-bit cần thiết để chạy driver máy in 64-bit'
 		apt-get -y install libatk1.0-0t64:i386 libcairo2:i386 libgtk2.0-0t64:i386 libpango-1.0-0:i386 libstdc++6:i386 libpopt0:i386 libxml2:i386 libc6:i386
 		check_error PACKAGE $?
 	fi
-	echo 'Installing the printer in CUPS'
+	echo 'Đang thêm máy in vào CUPS'
 	/usr/sbin/lpadmin -p $NAMEPRINTER -P /usr/share/cups/model/CNCUPSLBP${LASERSHOT[$NAMEPRINTER]}CAPTK.ppd -v ccp://localhost:59687 -E
-	echo "Setting $NAMEPRINTER as the default printer"
+	echo "Đang đặt $NAMEPRINTER làm máy in mặc định"
 	/usr/sbin/lpadmin -d $NAMEPRINTER
-	echo 'Registering the printer in the ccpd daemon configuration file'
+	echo 'Đang đăng ký máy in trong cấu hình dịch vụ ccpd'
 	/usr/sbin/ccpdadmin -p $NAMEPRINTER -o $PATH_DEVICE
 	#Verify printer installation
 	installed_printer=$(ccpdadmin | grep $NAMEPRINTER | awk '{print $3}')
 	if [ -n "$installed_printer" ]; then
 		if [ "$CONECTION" == "usb" ]; then
-			echo 'Creating a rule for the printer'
+			echo 'Đang tạo quy tắc nhận diện máy in'
 			#A rule is created to provides an alternative name (a symbolic link) to our printer so as not to depend on the changing values of lp0, lp1,...
 			echo 'KERNEL=="lp[0-9]*", SUBSYSTEMS=="usb", ATTRS{serial}=='$PRINTER_SERIAL', SYMLINK+="canon'$NAMEPRINTER'"' > /etc/udev/rules.d/85-canon-capt.rules
 			#Update the rules
@@ -291,11 +296,11 @@ exit 0' > /etc/init.d/ccpd
 			#Check the created rule
 			until [ -e $PATH_DEVICE ]
 			do
-				echo -ne "Turn off the printer, wait 2 seconds, then turn on the printer\r"
+				echo -ne "Hãy tắt máy in, chờ 2 giây rồi bật lại máy in\r"
 				sleep 2
 			done
 		fi
-		echo -e "\e[2KRunning ccpd"
+		echo -e "\e[2KĐang chạy dịch vụ ccpd"
 		service ccpd restart
 		#Autoload ccpd
 		if [ $INIT_SYSTEM == 'systemd' ]; then
@@ -314,7 +319,7 @@ exec /usr/sbin/ccpd start' > /etc/init/ccpd-start.conf
 [Desktop Entry]
 Version=1.0
 Name='$NAMEPRINTER'
-GenericName=Status monitor for Canon CAPT Printer
+GenericName=Trình theo dõi trạng thái máy in Canon CAPT
 Exec=captstatusui -P '$NAMEPRINTER'
 Terminal=false
 Type=Application
@@ -327,7 +332,7 @@ Icon=/usr/share/icons/Humanity/devices/48/printer.svg' > "${XDG_DESKTOP_DIR}/$NA
 			SERIALMIN=${SERIALRANGE[0]}
 			SERIALMAX=${SERIALRANGE[1]}
 			if [[ ${#PRINTER_SERIAL} -eq ${#SERIALMIN} && $PRINTER_SERIAL > $SERIALMIN && $PRINTER_SERIAL < $SERIALMAX || $PRINTER_SERIAL == $SERIALMIN || $PRINTER_SERIAL == $SERIALMAX ]]; then
-				echo "Installing the autoshutdowntool utility"
+				echo "Đang cài tiện ích tự động tắt máy in"
 				ASDT_FILE=autoshutdowntool_1.00-1_${ARCH}_deb.tar.gz
 				if [ ! -f $ASDT_FILE ]; then
 					wget -O $ASDT_FILE ${URL_ASDT[$ARCH]}
@@ -341,12 +346,12 @@ Icon=/usr/share/icons/Humanity/devices/48/printer.svg' > "${XDG_DESKTOP_DIR}/$NA
 			sudo -u $LOGIN_USER nohup captstatusui -P $NAMEPRINTER > /dev/null 2>&1 &
 			sleep 5
 		fi
-		echo 'Installation completed. Press any key to exit'
+		echo 'Đã cài đặt xong. Nhấn phím bất kỳ để thoát'
 		read -s -n1
 		exit 0
 	else
-		echo 'Driver for $NAMEPRINTER is not installed!'
-		echo 'Press any key to exit'
+		echo "Không cài đặt được driver cho máy in $NAMEPRINTER!"
+		echo 'Nhấn phím bất kỳ để thoát'
 		read -s -n1
 		exit 1
 	fi
@@ -354,47 +359,48 @@ Icon=/usr/share/icons/Humanity/devices/48/printer.svg' > "${XDG_DESKTOP_DIR}/$NA
 
 function canon_help {
 	clear
-	echo 'Installation Notes
-If you have already installed driver for this series,
-uninstall it before using this script.
-If the driver packages are not found, they will be automatically
-downloaded from the Internet and saved in the script folder.
-To update the driver, first uninstall the old version using this script,
-then install a new one.
-Notes on printing problems:
-If the printer stops printing, run captstatusui via the shortcut
-on desktop or from terminal: captstatusui -P <printer_name>
-The captstatusui window shows the current status of the printer.
-If an error occurs, its description is displayed.
-Here you can try pressing button "Resume Job" to continue printing
-or "Cancel Job" button to cancel the job.
-If this does not help, try running canon_restart.sh
+	echo 'LƯU Ý KHI CÀI ĐẶT
+Nếu bạn đã cài driver cho dòng máy in này,
+hãy gỡ cài đặt driver cũ trước khi chạy script.
+Nếu chưa có sẵn các gói driver, script sẽ tự động
+tải chúng từ Internet và lưu vào thư mục chứa script.
+Muốn cập nhật driver, trước tiên hãy dùng script này để gỡ bản cũ,
+sau đó cài đặt lại bản mới.
 
-Printer configuration command: cngplp
-Additional settings command: captstatusui -P <printer_name>
-Turn on auto-off (not for all models): autoshutdowntool
-To log the installation process, run the script like this:
+XỬ LÝ KHI GẶP SỰ CỐ IN:
+Nếu máy in không in, hãy mở trình theo dõi trạng thái bằng lối tắt
+trên Màn hình nền hoặc chạy lệnh trong Terminal: captstatusui -P <tên_máy_in>
+Cửa sổ captstatusui sẽ hiển thị trạng thái hiện tại của máy in.
+Nếu có lỗi, mô tả lỗi sẽ được hiển thị tại đây.
+Bạn có thể thử nhấn nút "Resume Job" để tiếp tục in
+hoặc nút "Cancel Job" để hủy lệnh in.
+Nếu vẫn không được, hãy thử chạy canon_restart.sh
+
+Lệnh mở phần cấu hình máy in: cngplp
+Lệnh mở phần thiết lập bổ sung: captstatusui -P <tên_máy_in>
+Bật chức năng tự động tắt máy in (không áp dụng cho mọi model): autoshutdowntool
+Để ghi lại quá trình cài đặt vào file nhật ký, chạy:
 logsave log.txt ./canon_lbp_setup.sh
 '
 }
 
 clear
-echo 'Installing the Linux CAPT Printer Driver v'${DRIVER_VERSION}' for Canon LBP printers on Ubuntu (both 32-bit and 64-bit)
-Supported printers:'
+echo 'Cài driver máy in Linux CAPT phiên bản '${DRIVER_VERSION}' cho máy in Canon LBP trên Ubuntu (32-bit và 64-bit)
+Các máy in được hỗ trợ:'
 echo "$NAMESPRINTERS" | sed ':a; /$/N; s/\n/, /; ta' | fold -s
 
-PS3='Please enter your choice: '
-select opt in 'Install' 'Uninstall' 'Help' 'Exit'
+PS3='Hãy nhập lựa chọn của bạn: '
+select opt in 'Cài đặt' 'Gỡ cài đặt' 'Trợ giúp' 'Thoát'
 do
-	if [ "$opt" == 'Install' ]; then
+	if [ "$opt" == 'Cài đặt' ]; then
 		canon_install
 		break
-	elif [ "$opt" == 'Uninstall' ]; then
+	elif [ "$opt" == 'Gỡ cài đặt' ]; then
 		canon_uninstall
 		break
-	elif [ "$opt" == 'Help' ]; then
+	elif [ "$opt" == 'Trợ giúp' ]; then
 		canon_help
-	elif [ "$opt" == 'Exit' ]; then
+	elif [ "$opt" == 'Thoát' ]; then
 		break
 	fi
 done
