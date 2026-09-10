@@ -46,7 +46,7 @@ Nếu `apt update` hoàn tất mà không báo lỗi, bạn có thể tiếp t�
 Mở **Terminal** (Cửa sổ dòng lệnh), dán lệnh dưới đây rồi nhấn Enter:
 
 ```
-wget https://github.com/linhdhvn/canon_printer/raw/master/canon_lbp_setup.sh -O /tmp/canon_lbp_setup.sh && sudo bash /tmp/canon_lbp_setup.sh
+wget https://github.com/linhdhvn/ubuntu_canon_printer/raw/master/canon_lbp_setup.sh -O /tmp/canon_lbp_setup.sh && sudo bash /tmp/canon_lbp_setup.sh
 ```
 
 Ubuntu có thể yêu cầu nhập mật khẩu đăng nhập. Khi gõ mật khẩu trong Terminal, màn hình sẽ không hiển thị ký tự nào; đây là hành vi bình thường.
@@ -56,7 +56,7 @@ Ubuntu có thể yêu cầu nhập mật khẩu đăng nhập. Khi gõ mật kh�
 Sử dụng cách này nếu bạn muốn lưu script về máy trước khi cài:
 
 ```
-wget https://github.com/linhdhvn/canon_printer/raw/master/canon_lbp_setup.sh
+wget https://github.com/linhdhvn/ubuntu_canon_printer/raw/master/canon_lbp_setup.sh
 chmod +x canon_lbp_setup.sh
 ./canon_lbp_setup.sh
 ```
